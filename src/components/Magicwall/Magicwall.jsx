@@ -45,7 +45,6 @@ export const Magicwall = () => {
         const contract = new web3.eth.Contract(ERC721_ABI, '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85');
         contract.defaultAccount = address;
         const ensBalance = await contract.methods.balanceOf(address).call();
-        console.log(ensBalance);
 
         if (ensBalance >= 1) {
             return true;
@@ -86,6 +85,7 @@ export const Magicwall = () => {
         if (accounts.length == 0) {
             setAuthenticated(false);
             setValidated(false);
+            setAddress(null);
         } else {
             setAddress(accounts[0]);
         }
@@ -104,7 +104,7 @@ export const Magicwall = () => {
         {(authenticated && validated) &&
             <div className="Magicwall__container">
                 <p className="Magicwall__title"><GreenCheck /> Success! Grab your Tickets.</p>
-                <p className="Magicwall__address-text">{address}</p>
+                <p className="Magicwall__address-text">Your address: <code className="Magicwall__address">{address}</code></p>
                 <hr></hr>
                 some tokengated content here
             </div>}
@@ -112,9 +112,9 @@ export const Magicwall = () => {
         {(authenticated && !validated) &&
             <div className="Magicwall__container">
                 <p className="Magicwall__title"><RedCross /> Unfortunately, your wallet does not meet these requirements.</p>
-                <p className="Magicwall__address-text">{address}</p>
-                <hr></hr>
                 <Requirements />
+                <hr></hr>
+                <p className="Magicwall__address-text">Your address: <code className="Magicwall__address">{address}</code></p>
             </div>}
 
     </>

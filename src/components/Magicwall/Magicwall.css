@@ -30,6 +30,10 @@ body {
     color: grey;
 }
 
+.Magicwall__address {
+    font-size: 17px;
+}
+
 .Magicwall__requirements>p {
     font-size: 20px;
     color: grey;
