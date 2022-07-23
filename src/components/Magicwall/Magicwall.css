@@ -1,0 +1,40 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, Inter, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    --default-gradient: linear-gradient(to right, #d66d75, #e29587);
+}
+
+.Magicwall__container {
+
+    border: 1px solid;
+    border-color: #e29587;
+    border-radius: 5px;
+    padding: 0px 20px 20px 20px;
+    display: inline-block;
+    box-shadow: rgb(0 0 0 / 1%) 0px 0px 1px, rgb(0 0 0 / 4%) 0px 4px 8px, rgb(0 0 0 / 4%) 0px 16px 24px, rgb(0 0 0 / 1%) 0px 24px 32px;
+}
+
+
+.Magicwall__title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    background: var(--default-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.Magicwall__secondary-text {
+    color: grey;
+}
+
+.Magicwall__address-text {
+    color: grey;
+}
+
+.Magicwall__requirements>p {
+    font-size: 20px;
+    color: grey;
+}
+
+.Magicwall__requirements>ul {
+    color: grey;
+}

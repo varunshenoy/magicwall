@@ -1,0 +1,22 @@
+:root {
+    --primary-color: 214, 109, 117;
+    --text-color: 256, 256, 256;
+}
+
+.Magicwall__connect-wallet {
+    background: #954fff;
+    border: 0;
+    color: rgba(var(--text-color));
+    font-family: sans-serif;
+    font-size: 18px;
+    padding: 12px 32px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.Magicwall__connect-wallet:hover {
+    box-shadow: rgba(149, 79, 255, 0.5) 0px 0px 20px 0px;
+}
