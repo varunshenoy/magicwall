@@ -48,6 +48,12 @@ class UnfoldRuntime {
         }
     }
 
+    if_assign(node) {
+        if (this.executeLine(node.if)) {
+            this.assign(node.assign);
+        }
+    }
+
     executeLine(node) {
         if (node.operator == null) {
             // leaf node
@@ -63,7 +69,11 @@ class UnfoldRuntime {
             this.unlock(node);
         } else if (node.operator === 'lock') {
             this.lock(node);
+        } else if (node.operator === 'if_assign') {
+            this.if_assign(node);
         } else if (node.operator === 'ERC20') {
+            return 5;
+        } else if (node.operator === 'ERC721') {
             return 5;
         } else if (node.operator === '>') {
             const left = this.executeLine(node.left);
