@@ -1,16 +1,13 @@
+import React, { useEffect, useState } from 'react';
+import Web3 from 'web3'
+
 import { ConnectWallet } from "../ConnectWallet";
 import { Requirements } from "../Requirements";
 import { GreenCheck, RedCross } from "../Icons";
 
-
-import React, { useEffect, useState } from 'react';
-import Web3 from 'web3'
-
-import ENSTokenABI from './ERC721_ABI';
-
-
 import './Magicwall.css';
-import ERC721_ABI from "./ERC721_ABI";
+
+import ERC721_ABI from "../../data/ERC721_ABI";
 
 export const Magicwall = () => {
     const [authenticated, setAuthenticated] = useState(false);
@@ -106,7 +103,7 @@ export const Magicwall = () => {
                 <p className="Magicwall__title"><GreenCheck /> Success! Grab your Tickets.</p>
                 <p className="Magicwall__address-text">Your address: <code className="Magicwall__address">{address}</code></p>
                 <hr></hr>
-                some tokengated content here
+                secret message
             </div>}
 
         {(authenticated && !validated) &&

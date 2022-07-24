@@ -29,6 +29,7 @@
     "react-dom": "^18.2.0"
   },
   "dependencies": {
+    "nearley": "^2.20.1",
     "web3": "^1.7.4"
   }
 }
