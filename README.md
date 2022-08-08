@@ -1,7 +1,7 @@
 # Magicwall 🏛️ 🪄
 ## A React Component for Tokengating
 
-Magicwall is a proof-of-concept React component that uses the Unfold scripting language to tokengate content. 
+Magicwall is a proof-of-concept React component that uses the [Unfold](https://varunshenoy.com/unfold) scripting language to tokengate content. 
 
 ![Magicwall Demo](demo.gif)
 
