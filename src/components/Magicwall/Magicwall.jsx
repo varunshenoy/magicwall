@@ -7,11 +7,15 @@ import { GreenCheck, RedCross } from "../Icons";
 
 import './Magicwall.css';
 
+import UnfoldRuntime from '../../../parse';
+
 import ERC721_ABI from "../../data/ERC721_ABI";
+import ERC20_ABI from "../../data/ERC20_ABI";
 
 export const Magicwall = () => {
     const [authenticated, setAuthenticated] = useState(false);
     const [address, setAddress] = useState(null);
+    const [chainId, setChainId] = useState(1);
     const [validated, setValidated] = useState(false);
 
     let web3 = new Web3(Web3.givenProvider);
@@ -23,7 +27,7 @@ export const Magicwall = () => {
                 setAuthenticated(true);
             })
         }
-    }, [address]);
+    }, [address, chainId]);
 
     useEffect(() => {
         const getAccounts = async () => {
@@ -36,29 +40,65 @@ export const Magicwall = () => {
         getAccounts();
     })
 
+    const getABI = (type) => {
+        if (type == "ERC721") {
+            return ERC721_ABI;
+        }
+        if (type == "ERC20") {
+            return ERC20_ABI;
+        }
+    }
+
+    const queryToken = async (type, contractAddress) => {
+        const contract = new web3.eth.Contract(getABI(type), contractAddress);
+        contract.defaultAccount = address;
+        const balance = await contract.methods.balanceOf(address).call();
+        return balance;
+    }
+
+    const queryEth = async () => {
+        const balance = await web3.eth.getBalance(address);
+        return Web3.utils.fromWei(balance);
+    }
+
+    const changeChain = async (chainId) => {
+        if (window.ethereum.networkVersion !== chainId) {
+            try {
+                setChainId(chainId);
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: web3.utils.toHex(chainId) }]
+                });
+            } catch (err) {
+                // This error code indicates that the chain has not been added to MetaMask
+                if (err.code === 4902) {
+                    console.log("Please add this chain to your network");
+                }
+            }
+        }
+    }
+
     const checkValidAddress = async () => {
 
-        // Allow ERC721 
-        const contract = new web3.eth.Contract(ERC721_ABI, '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85');
-        contract.defaultAccount = address;
-        const ensBalance = await contract.methods.balanceOf(address).call();
+        // const code = "if ($.balanceOf(ERC20(0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0)) > 0) => $.grantAccess! else $.denyAccess!";
+        const code = "if ($.balanceOf(ERC721(0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85)) > 0) => $.grantAccess! else $.denyAccess!";
+        // const code = "if ($.balanceOf(ERC721(0x642FfAb2752Df3BCE97083709F36080fb1482c80)) > 0) => $.grantAccess! else $.denyAccess!"; // requires arbitrum chain
+        // const code = "$.setChain(137)\n$.grantAccess!";
 
-        if (ensBalance >= 1) {
-            return true;
-        }
+        const walletContext = {
+            "queryToken": queryToken,
+            "queryEth": queryEth,
+            "isValidAddr": web3.utils.isAddress,
+            "setChain": changeChain,
+            "address": address
+        };
+        console.log(walletContext);
 
-        // // Allow eth 
-        // const balance = await web3.eth.getBalance(address);
-        // if (Web3.utils.fromWei(balance) >= 0.0019) {
-        //     return true;
-        // }
+        const runtime = new UnfoldRuntime(code, walletContext);
 
-        // // Allow whitelist by addr
-        // if (address == '0xcf5751d8a71f56b4e08d04f3c37f95aaeed93070') {
-        //     return true;
-        // }
-
-        return false;
+        await runtime.setup();
+        await runtime.execute();
+        return runtime.success();
     }
 
     const ethEnabled = async () => {
@@ -103,7 +143,7 @@ export const Magicwall = () => {
                 <p className="Magicwall__title"><GreenCheck /> Success! Grab your Tickets.</p>
                 <p className="Magicwall__address-text">Your address: <code className="Magicwall__address">{address}</code></p>
                 <hr></hr>
-                secret message
+                this is a secret message :)
             </div>}
 
         {(authenticated && !validated) &&

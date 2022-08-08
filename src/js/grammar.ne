@@ -1,15 +1,23 @@
 @builtin "whitespace.ne"
 
-script -> statement
-    | statement _ "\n" _ script {% data => [data[0], ...data[4]] %}
+script -> statement {% data => data[0] %}
+    | statement "\n" script {% data => [data[0]].concat(data[2]) %}
 
-statement -> letStatement | ifStatement
+statement -> _ directive _ {% data => data[1] %}
+
+setStatement -> "$.setChain(" _ number _ ")"  {% data => { return {operator: "set_chain", chainId: data[2]} } %}
 
 letStatement -> "Token" _ string _ "=" _ token {% data => { return {operator: "assign", name: data[2], value: data[6]} } %}
 
-ifStatement -> "if" _ condition _ "=>" _ "unlock!" {% (data) => { return {operator: "unlock", if: data[2]} } %}
-    | "if" _ condition _ "=>" _ "lock!"  {% (data) => { return {operator: "lock", if: data[2]} } %}
-    | "if" _ condition _ "=>" _ letStatement {% (data) => { return {operator: "if_assign", if: data[2], assign: data[6]} } %}
+directive -> "(" _ directive _ ")" {% data => data[2] %}
+    | "$.grantAccess!" {% data => "$.grantAccess!" %}
+    | "$.denyAccess!" {% data => "$.denyAccess!" %}
+    | letStatement {% data => data[0] %}
+    | _ setStatement _ {% data => data[1] %}
+    | _ ifStatement _  {% data => data[1] %}
+
+ifStatement -> "if" _ condition _ "then" _ directive {% (data) => { return {operator: "if", if: data[2], then: data[6]} } %}
+            | "if" _ condition _ "then" _ directive _ "else" _ directive {% (data) => { return {operator: "if", if: data[2], then: data[6], else: data[10]} } %}
 
 condition ->
    "(" _ condition _ ")" {% (data) => { return data[2] }  %}
@@ -18,18 +26,34 @@ condition ->
   | value _ ">=" _  value {% (data) => { return {operator: ">=", left: data[0], right: data[4]} } %}
   | value _ "<=" _  value {% (data) => { return {operator: ">=", left: data[4], right: data[0]} } %}
   | value _ "==" _  value {% (data) => { return {operator: "==", left: data[0], right: data[4]} } %}
+  | contract _ "==" _  contract {% (data) => { return {operator: "==", left: data[0], right: data[4]} } %}
+  | contract _ "!=" _  contract {% (data) => { return {operator: "!=", left: data[0], right: data[4]} } %}
   | value _ "!=" _  value {% (data) => { return {operator: "!=", left: data[0], right: data[4]} } %}
   | condition _ "&&" _  condition {% (data) => { return {operator: "&&", left: data[0], right: data[4]} } %}
   | condition _ "||" _  condition {% (data) => { return {operator: "||", left: data[0], right: data[4]} } %}
+  | "!" _ condition {% (data) => { return {operator: "!", child: data[2]} } %}
 
 token -> _ "ERC20(" contract ")" _ {% (data) => { return {operator: "ERC20", address: data[2]} } %}
   | _ "ERC721(" contract ")" _  {% (data) => { return {operator: "ERC721", address: data[2]} } %}
   | _ "ETH" _  {% () => { return "ETH" } %}
 
-value -> [0-9]:+ {% d => parseInt(d[0].join("")) %}
-    | "balanceOf(" token ")" {% d => d[1] %}
-    | "balanceOf(" string ")" {% d => d[1] %}
+value -> number {% d => d[0] %}
+    | "$.balanceOf(" token ")" {% d => d[1] %}
+    | "$.balanceOf(" string ")" {% d => d[1] %}
 
 contract -> "0x" [a-fA-F0-9]:+ {% d => "0x" + d[1].join("") %}
+    | "$.address" {% data => data[0] %}
  
 string -> [a-zA-Z]:+ {% d => d[0].join("") %}
+
+number -> [0-9]:+ {% d => parseInt(d[0].join("")) %}
+        | decimal {% data => data[0] %}
+
+decimal -> [0-9]:+ ("." [0-9]:+):? {%
+    function(d) {
+        return parseFloat(
+            d[0].join("") +
+            (d[1] ? "."+d[1][1].join("") : "")
+        );
+    }
+%}

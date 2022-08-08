@@ -2,108 +2,150 @@ const nearley = require("nearley");
 const grammar = require("./unfold.js");
 
 class UnfoldRuntime {
-    constructor(code) {
+    constructor(code, walletContext) {
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+
         this.unlocked = 0;
+
+        this.address = walletContext.address
+        this.queryToken = walletContext.queryToken;
+        this.setChain = walletContext.setChain;
+        this.isValidAddr = walletContext.isValidAddr;
+        this.queryEth = walletContext.queryEth;
+        this.table = {};
+
         try {
             parser.feed(code);
             this.ast = parser.results;
-            console.log(this.ast)
             if (this.ast.length > 1) {
                 this.ast = this.ast[0];
             }
         } catch (e) {
             console.log(e.message);
         }
-        this.table = { "ETH": 0 };
     }
 
-    assign(node) {
+    async assign(node) {
         const name = node.name;
+        const tokenAddress = node.value.address;
 
-        this.table[name] = 1;
-
-        if (node.value.address.length != 42) {
-            console.log("INVALID ETH ADDR");
+        if (!this.isValidAddr(tokenAddress)) {
+            // throw error
         }
 
-        // query assignment from node.value
+        this.table[name] = walletContext.queryToken(tokenAddress);
     }
 
-    execute() {
-        for (const node of this.ast) {
-            this.executeLine(node[0]);
+    async query(node) {
+        const balance = await this.queryToken(node.operator, node.address);
+        return balance;
+    }
+
+    async setup() {
+        const eth = await this.queryEth();
+        this.table["ETH"] = eth;
+        console.log(eth);
+    }
+
+    async execute() {
+        console.log(this.ast);
+        if (this.ast.length !== undefined) {
+            for (const node of this.ast) {
+                console.log(node);
+                await this.executeLine(node);
+            }
+        } else {
+            await this.executeLine(this.ast);
         }
     }
 
-    unlock(node) {
-        if (this.executeLine(node.if) && this.unlocked == 0) {
+    unlock() {
+        if (this.unlocked == 0) {
             this.unlocked = 1;
         }
+        return this.unlocked;
     }
 
-    lock(node) {
-        if (this.executeLine(node.if) && this.unlocked == 0) {
+    lock() {
+        if (this.unlocked == 0) {
             this.unlocked = -1;
         }
+        return this.unlocked;
     }
 
-    if_assign(node) {
-        if (this.executeLine(node.if)) {
-            this.assign(node.assign);
+    async if(node) {
+        const cond = await this.executeLine(node.if);
+        if (cond) {
+            this.executeLine(node.then);
+        } else if (node.else) {
+            this.executeLine(node.else);
         }
     }
 
-    executeLine(node) {
+    async executeLine(node) {
         if (node.operator == null) {
             // leaf node
             if (typeof node === 'string') {
+                // is either a declared token, a contract, or reserved keyword (myaddress)
+                if (node === "$.address") {
+                    return this.address;
+                }
+                if (node === "$.grantAccess!") {
+                    return this.unlock();
+                }
+                if (node === "$.denyAccess!") {
+                    return this.lock();
+                }
+                if (node.length == 42) {
+                    return node;
+                }
                 return this.table[node];
             }
             return node;
         }
 
         if (node.operator === 'assign') {
-            this.assign(node);
-        } else if (node.operator === 'unlock') {
-            this.unlock(node);
-        } else if (node.operator === 'lock') {
-            this.lock(node);
-        } else if (node.operator === 'if_assign') {
-            this.if_assign(node);
-        } else if (node.operator === 'ERC20') {
-            return 5;
-        } else if (node.operator === 'ERC721') {
-            return 5;
+            await this.assign(node);
+        } if (node.operator === 'set_chain') {
+            console.log(node.chainId);
+            await this.setChain(node.chainId);
+        } else if (node.operator === 'if') {
+            await this.if(node);
+        } else if (node.operator === 'ERC20' || node.operator === 'ERC721') {
+            const balance = await this.query(node);
+            return balance;
         } else if (node.operator === '>') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
             return (left > right);
         } else if (node.operator === '>=') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
-            console.log((left >= right));
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
             return (left >= right);
         } else if (node.operator === '==') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
-            return (left == right);
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
+            return (left === right);
         } else if (node.operator === '!=') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
             return (left != right);
         } else if (node.operator === '&&') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
             return (left && right);
         } else if (node.operator === '||') {
-            const left = this.executeLine(node.left);
-            const right = this.executeLine(node.right);
+            const left = await this.executeLine(node.left);
+            const right = await this.executeLine(node.right);
             return (left || right);
+        } else if (node.operator === '!') {
+            const child = await this.executeLine(node.child);
+            return (!child);
         }
     }
 
     success() {
+        console.log(this.unlocked);
         if (this.unlocked == 1) {
             return true;
         }
@@ -112,22 +154,4 @@ class UnfoldRuntime {
 
 }
 
-const code = "Token ens = ERC721(0xABC)\nif (5 <= 10) => lock!\nif (balanceOf(ERC20(0xabcdef)) > 0 && balanceOf(ETH) < 10) =>unlock!\nif (10 <= 5) => lock!";
-//const code = "Token ens = ERC721(0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85)\nif (balanceOf(ens) > 0) => unlock!";
-const runtime = new UnfoldRuntime(code);
-runtime.execute();
-console.log(runtime.success());
-
-// export UnfoldRuntime;
-
-// const parse = (code) => {
-//     try {
-//         console.log(code.length);
-//         parser.feed(code);
-//         console.log(JSON.stringify(parser.results));
-//     } catch (e) {
-//         console.log(e.message);
-//     }
-// }
-
-// mycode.forEach(parse);
+export default UnfoldRuntime;
