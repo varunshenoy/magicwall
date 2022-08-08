@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import Web3 from 'web3'
 
 import { ConnectWallet } from "../ConnectWallet";
+import { DownloadButton } from '../DownloadButton';
 import { Requirements } from "../Requirements";
 import { GreenCheck, RedCross } from "../Icons";
 
 import './Magicwall.css';
 
-import UnfoldRuntime from '../../../parse';
+import UnfoldRuntime from '../../unfold/parse';
 
 import ERC721_ABI from "../../data/ERC721_ABI";
 import ERC20_ABI from "../../data/ERC20_ABI";
@@ -80,10 +81,7 @@ export const Magicwall = () => {
 
     const checkValidAddress = async () => {
 
-        // const code = "if ($.balanceOf(ERC20(0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0)) > 0) => $.grantAccess! else $.denyAccess!";
         const code = "if ($.balanceOf(ERC721(0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85)) > 0) => $.grantAccess! else $.denyAccess!";
-        // const code = "if ($.balanceOf(ERC721(0x642FfAb2752Df3BCE97083709F36080fb1482c80)) > 0) => $.grantAccess! else $.denyAccess!"; // requires arbitrum chain
-        // const code = "$.setChain(137)\n$.grantAccess!";
 
         const walletContext = {
             "queryToken": queryToken,
@@ -143,7 +141,7 @@ export const Magicwall = () => {
                 <p className="Magicwall__title"><GreenCheck /> Success! Grab your Tickets.</p>
                 <p className="Magicwall__address-text">Your address: <code className="Magicwall__address">{address}</code></p>
                 <hr></hr>
-                this is a secret message :)
+                <DownloadButton />
             </div>}
 
         {(authenticated && !validated) &&
